@@ -1,6 +1,0 @@
-[build]
-builder = "dockerfile"
-buildCommand = "mvn -q clean package"
-
-[start]
-cmd = "java -jar target/IPLocator-1.0-SNAPSHOT.jar"
