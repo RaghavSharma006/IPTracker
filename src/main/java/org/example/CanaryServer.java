@@ -4,6 +4,7 @@ import com.sun.net.httpserver.HttpServer;
 import org.example.db.Database;
 import org.example.email.EmailSender;
 import org.example.handler.TokenHandler;
+import org.example.handler.UiHandler;
 
 import java.net.InetSocketAddress;
 
@@ -44,6 +45,10 @@ public class CanaryServer {
             exchange.close();
         });
 
+        // UI at root and /app
+        server.createContext("/", exchange -> UiHandler.serve(exchange));
+        server.createContext("/app", exchange -> UiHandler.serve(exchange));
+
         server.start();
 
         System.out.println("=================================");
@@ -55,6 +60,7 @@ public class CanaryServer {
         System.out.println("  POST /api/tokens  - Create a canary token");
         System.out.println("  GET  /t/{token}   - Trigger endpoint");
         System.out.println("  GET  /health     - Health check");
+        System.out.println("  GET  / | /app   - UI");
         System.out.println();
     }
 
