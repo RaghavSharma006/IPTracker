@@ -14,7 +14,7 @@ public class UiHandler {
             <head>
               <meta charset="utf-8">
               <meta name="viewport" content="width=device-width,initial-scale=1">
-              <title>Canary Tokens</title>
+              <title>IP Tracker</title>
               <style>
                 :root {
                   --bg: #0f1117;
@@ -42,13 +42,13 @@ public class UiHandler {
                   border-radius: 14px;
                   padding: 2.25rem;
                   width: 100%;
-                  max-width: 420px;
+                  max-width: 460px;
                 }
-                h1 { font-size: 1.35rem; margin-bottom: 0.6rem; }
-                p { color: var(--muted); font-size: 0.875rem; margin-bottom: 1.4rem; }
+                h1 { font-size: 1.35rem; margin-bottom: .6rem; }
+                p { color: var(--muted); font-size: .875rem; margin-bottom: 1.4rem; }
                 .field { margin-bottom: 1.1rem; }
-                label { display: block; font-size: 0.8rem; text-transform: uppercase; letter-spacing: .03em; color: var(--muted); margin-bottom: .35rem; }
-                input[type=email] {
+                label { display: block; font-size: .8rem; text-transform: uppercase; letter-spacing: .03em; color: var(--muted); margin-bottom: .35rem; }
+                input[type=url], input[type=email] {
                   width: 100%;
                   padding: .7rem .85rem;
                   border: 1px solid var(--border);
@@ -59,7 +59,7 @@ public class UiHandler {
                   outline: none;
                   transition: border-color .18s;
                 }
-                input[type=email]:focus { border-color: var(--accent); }
+                input[type=url]:focus, input[type=email]:focus { border-color: var(--accent); }
                 button {
                   width: 100%;
                   padding: .78rem;
@@ -74,36 +74,24 @@ public class UiHandler {
                 }
                 button:hover { background: var(--accent-hover); }
                 button:disabled { opacity: .6; cursor: not-allowed; }
-                .result {
-                  margin-top: 1.2rem;
-                  padding: .9rem;
-                  background: #12141a;
-                  border: 1px solid var(--border);
-                  border-radius: 8px;
-                  word-break: break-all;
-                  font-size: .85rem;
-                  display: flex;
-                  align-items: center;
-                  gap: .5rem;
-                }
-                .result button {
-                  width: auto;
-                  padding: .35rem .7rem;
-                  font-size: .78rem;
-                  margin: 0;
-                }
+                .result { margin-top: 1.2rem; padding: .9rem; background: #12141a; border: 1px solid var(--border); border-radius: 8px; word-break: break-all; font-size: .85rem; display: flex; align-items: center; gap: .5rem; }
+                .result button { width: auto; padding: .35rem .7rem; font-size: .78rem; margin: 0; }
                 .error-msg { color: #ff5f56; font-size: .85rem; margin-top: .5rem; }
               </style>
             </head>
             <body>
               <div class="card">
-                <h1>Canary Tokens</h1>
-                <p>Enter an email to generate a canary link. Visiting the link triggers an alert to that address.</p>
+                <h1>IP Tracker</h1>
+                <p>Enter a destination URL and notification email. Share the generated tracking link — when someone opens it, you'll get an email alert with their approximate location.</p>
                 <div class="field">
-                  <label for="email">Email</label>
+                  <label for="dest">Destination URL</label>
+                  <input type="url" id="dest" placeholder="https://example.com/page" autocomplete="off">
+                </div>
+                <div class="field">
+                  <label for="email">Notification Email</label>
                   <input type="email" id="email" placeholder="you@example.com" autocomplete="email">
                 </div>
-                <button id="go" type="button">Generate Link</button>
+                <button id="go" type="button">Generate Tracking Link</button>
                 <p id="err" class="error-msg" style="display:none"></p>
                 <div id="res" class="result" style="display:none">
                   <span id="link"></span>
@@ -111,28 +99,32 @@ public class UiHandler {
                 </div>
               </div>
               <script>
+                function esc(s) { return s.replace(/[&<>"']/g, c => ({\"&\":\"&amp;\",\"<\":\"&lt;\",\">\":\"&gt;\",\"\\\"\":\"&quot;\",\"'\":\"&#39;\"}[c])); }
                 const go = document.getElementById('go');
-                const email = document.getElementById('email');
                 const res = document.getElementById('res');
                 const linkSpan = document.getElementById('link');
                 const copyBtn = document.getElementById('copy');
                 const errP = document.getElementById('err');
 
                 go.onclick = async () => {
-                  const addr = email.value.trim();
-                  if (!addr) { errP.textContent = 'Please enter an email.'; errP.style.display = 'block'; return; }
+                  const dest = document.getElementById('dest').value.trim();
+                  const email = document.getElementById('email').value.trim();
+                  if (!dest || !email) { errP.textContent = 'All fields are required.'; errP.style.display = 'block'; return; }
                   errP.style.display = 'none';
                   go.disabled = true; go.textContent = 'Generating…';
                   try {
-                    const r = await fetch('/api/tokens', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({email: addr}) });
-                    if (!r.ok) { const j = await r.json().catch(()=>({})); throw new Error(j.error || 'Failed'); }
+                    const r = await fetch('/api/tokens', {
+                      method: 'POST',
+                      headers: {'Content-Type':'application/json'},
+                      body: JSON.stringify({destination_url: dest, notification_email: email})
+                    });
                     const data = await r.json();
+                    if (!r.ok) throw new Error(data.error || 'Failed');
                     linkSpan.textContent = data.link;
                     res.style.display = 'flex';
                   } catch (e) { errP.textContent = e.message; errP.style.display = 'block'; }
-                  finally { go.disabled = false; go.textContent = 'Generate Link'; }
+                  finally { go.disabled = false; go.textContent = 'Generate Tracking Link'; }
                 };
-
                 copyBtn.onclick = () => { navigator.clipboard.writeText(linkSpan.textContent); copyBtn.textContent = 'Copied'; setTimeout(()=>copyBtn.textContent='Copy', 1200); };
               </script>
             </body>
